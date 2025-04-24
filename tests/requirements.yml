@@ -1,0 +1,3 @@
+integration_tests_dependencies:
+- desosu.general
+unit_tests_dependencies: []
