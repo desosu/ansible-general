@@ -1,0 +1,3 @@
+[tool.pylint.basic]
+# Naming style matching correct class names.
+class-naming-style = "PascalCase"

@@ -1,0 +1,37 @@
+name: Publish Ansible Collection
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install ansible-core
+      run: |
+        python -m pip install --upgrade pip
+        pip install ansible-core
+
+    - name: Create dist directory
+      run: mkdir -p dist
+
+    - name: Build Ansible collection
+      run: ansible-galaxy collection build --output-path dist
+
+    - name: Publish Ansible collection
+      env:
+        ANSIBLE_GALAXY_API_KEY: ${{ secrets.ANSIBLE_GALAXY_API_KEY }}
+      run: |
+        version=$(echo "${GITHUB_REF##*/}" | sed 's/^v//')
+        ansible-galaxy collection publish dist/desosu-general-${version}.tar.gz
