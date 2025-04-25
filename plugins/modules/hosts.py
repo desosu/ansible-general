@@ -195,6 +195,14 @@ class Entries:
         """Get the output of the entries."""
         output = []
         m_entries = entries if entries is not None else self.entries
+        max_ip_length = 0
+
+        for entry in m_entries:
+            if entry.get_type() != "entry":
+                continue
+
+            # Get the maximum length of the IP address
+            max_ip_length = max(max_ip_length, len(entry.get_compressed_ip()))
 
         for entry in m_entries:
             if entries_only and entry.get_type() != "entry":
@@ -208,7 +216,7 @@ class Entries:
                 output.append("")
             elif entry.get_type() == "entry":
                 ip = (
-                    entry.get_compressed_ip().ljust(39)
+                    entry.get_compressed_ip().ljust(max_ip_length + 2)
                     if justify
                     else entry.get_compressed_ip()
                 )
@@ -356,6 +364,32 @@ class HostFile:
         return Entries(entries)
 
 
+def apply_defaults(hosts_params):
+    environment_mappings = {
+        "test": "test",
+        "staging": "staging",
+        "production": "prod",
+    }
+
+    # Set defaults
+    for host in hosts_params:
+        if "state" not in host:
+            host["state"] = "present"
+
+        if "os" not in host:
+            host["os"] = "linux"
+
+        if "environment" not in host:
+            host["environment"] = None
+        elif host["environment"] == "":
+            host["environment"] = None
+        else:
+            host["environment"] = environment_mappings[host["environment"]]
+
+        if "domains" not in host:
+            host["domains"] = []
+
+
 def main():
     # Definir los argumentos del módulo
     # Este módulos acepta un argumento llamado "hosts" que es una lista donde "ip" es la dirección IP y "names" son los nombres de host
@@ -375,6 +409,18 @@ def main():
                     type="str",
                     choices=["linux", "windows"],
                     default="linux",
+                ),
+                # Environment: test, staging, production
+                environment=dict(
+                    type="str",
+                    choices=["", "test", "staging", "production"],
+                    default="",
+                ),
+                # List of domains (suffixes) to be added to the hostnames
+                domains=dict(
+                    type="list",
+                    elements="str",
+                    default=[],
                 ),
             ),
         ),
@@ -427,14 +473,6 @@ def main():
             with open(module.params["config_file"], "r", encoding="utf-8") as file:
                 hosts_params = json.load(file)
 
-                # Set defaults
-                for host in hosts_params:
-                    if "state" not in host:
-                        host["state"] = "present"
-
-                    if "os" not in host:
-                        host["os"] = "linux"
-
         except json.JSONDecodeError:
             module.fail_json(
                 msg=f"Error al analizar el archivo JSON {module.params['config_file']}",
@@ -447,24 +485,49 @@ def main():
     if len(hosts_params) == 0:
         module.fail_json(msg="No se han proporcionado hosts para actualizar")
 
+    apply_defaults(hosts_params)
+
     try:
         # Leer el archivo /etc/hosts
         entries = HostFile.create_entries("/etc/hosts")
 
         for host in hosts_params:
+            names = host["names"]
+            ip = host["ip"]
+
+            # Update list if environment is set
+            print(f"Environment: {host['environment']}")
+            print(f"Domains: {host['domains']}")
+
+            extra_names = []
+
+            if host["environment"] is not None:
+                for name in names:
+                    # If the name contains a dot, skip it
+                    if "." in name:
+                        continue
+
+                    # Add the environment to the hostnames
+                    extra_names.append(f"{host['environment']}-{name}")
+
+                if len(host["domains"]) > 0:
+                    for domain in host["domains"]:
+                        for name in names:
+                            extra_names.append(f"{host['environment']}.{name}.{domain}")
+                            extra_names.append(f"{name}.{domain}")
+
+                names.extend(extra_names)
+
             if host["state"] == "absent":
                 # Find the entries by IP address
-                absent_entries = entries.find_by_ip(host["ip"])
+                absent_entries = entries.find_by_ip(ip)
 
                 for entry in absent_entries:
                     # Remove the hostnames from the entry
-                    for h in host["names"]:
+                    for h in names:
                         entry.remove_hostname(h)
 
                 continue
-
-            ip = host["ip"]
-            names = host["names"]
 
             # Actualizar las entradas
             entries.update_alias(ip, names)
