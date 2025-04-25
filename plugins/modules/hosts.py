@@ -513,6 +513,9 @@ def main():
                 if len(host["domains"]) > 0:
                     for domain in host["domains"]:
                         for name in names:
+                            if "." in name:
+                                continue
+
                             extra_names.append(f"{host['environment']}.{name}.{domain}")
                             extra_names.append(f"{name}.{domain}")
 
