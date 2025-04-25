@@ -368,6 +368,7 @@ def apply_defaults(hosts_params):
     environment_mappings = {
         "test": "test",
         "staging": "staging",
+        "development": "dev",
         "production": "prod",
     }
 
@@ -413,7 +414,7 @@ def main():
                 # Environment: test, staging, production
                 environment=dict(
                     type="str",
-                    choices=["", "test", "staging", "production"],
+                    choices=["", "test", "development", "staging", "production"],
                     default="",
                 ),
                 # List of domains (suffixes) to be added to the hostnames
