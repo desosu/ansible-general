@@ -34,4 +34,4 @@ jobs:
         ANSIBLE_GALAXY_API_KEY: ${{ secrets.ANSIBLE_GALAXY_API_KEY }}
       run: |
         version=$(echo "${GITHUB_REF##*/}" | sed 's/^v//')
-        ansible-galaxy collection publish dist/desosu-general-${version}.tar.gz
+        ansible-galaxy collection publish dist/desosu-general-${version}.tar.gz --api-key $ANSIBLE_GALAXY_API_KEY
