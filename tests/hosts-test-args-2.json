@@ -2,17 +2,10 @@
     "ANSIBLE_MODULE_ARGS": {
         "hosts": [
             {
-                "ip": "10.66.109.6",
-                "names": ["n2f00-ww-01.cfe.mx"],
-                "state": "absent"
-            },
-            {
-                "ip": "10.66.109.7",
-                "names": ["n2f00-ww-01.cfe.mx"]
-            },
-            {
-                "ip": "10.66.109.7",
-                "names": ["n2f00-ww-02.cfe.mx"]
+                "ip": "192.168.1.1",
+                "environment": "production",
+                "names": ["licencias", "n2f00-ww-11", "n2f00-ww-11.cfe.mx"],
+                "domains": ["vsphere.local"]
             }
         ]
     }
